@@ -1,0 +1,41 @@
+{% extends "expenses/base.html" %}
+{% block title %}Charts{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Charts & Analytics</h1>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Expenses by Category</h2>
+      <div id="category-chart" style="height:350px;"></div>
+    </div>
+  </div>
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title">Monthly Income vs Expenses</h2>
+      <div id="monthly-chart" style="height:350px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const categoryData = {{ category_chart|safe }};
+const monthlyData  = {{ monthly_chart|safe }};
+
+// Category pie chart
+const catLabels = categoryData.map(d => d.category__name || "Uncategorised");
+const catValues = categoryData.map(d => parseFloat(d.total));
+Plotly.newPlot('category-chart', [{
+  type: 'pie', labels: catLabels, values: catValues,
+  hole: 0.4, textinfo: 'label+percent'
+}], { margin: {t:20,b:20,l:20,r:20} });
+
+// Monthly bar chart
+const months   = [...new Set(monthlyData.map(d => `${d.date__year}-${String(d.date__month).padStart(2,'0')}`))].sort();
+const incomes  = months.map(m => { const r = monthlyData.find(d => `${d.date__year}-${String(d.date__month).padStart(2,'0')}` === m && d.transaction_type === 'income'); return r ? parseFloat(r.total) : 0; });
+const expenses = months.map(m => { const r = monthlyData.find(d => `${d.date__year}-${String(d.date__month).padStart(2,'0')}` === m && d.transaction_type === 'expense'); return r ? parseFloat(r.total) : 0; });
+Plotly.newPlot('monthly-chart', [
+  { x: months, y: incomes,  type: 'bar', name: 'Income',  marker: {color: '#22c55e'} },
+  { x: months, y: expenses, type: 'bar', name: 'Expenses', marker: {color: '#ef4444'} },
+], { barmode: 'group', margin: {t:20,b:60,l:60,r:20} });
+</script>
+{% endblock %}

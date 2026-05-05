@@ -1,0 +1,61 @@
+{% extends "expenses/base.html" %}
+{% block title %}Recurring Transactions{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold">Recurring Transactions</h1>
+  <a href="{% url 'recurring-add' %}" class="btn btn-success">+ Add Recurring Rule</a>
+</div>
+
+{% if recurring_transactions %}
+<div class="card bg-base-100 shadow overflow-x-auto">
+  <table class="table table-zebra w-full">
+    <thead>
+      <tr>
+        <th>Description</th><th>Amount</th><th>Type</th><th>Category</th>
+        <th>Frequency</th><th>Next Due</th><th>Active</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rt in recurring_transactions %}
+      <tr>
+        <td>{{ rt.description }}</td>
+        <td class="font-mono
+          {% if rt.transaction_type == 'income' %}text-success{% else %}text-error{% endif %}">
+          {% if rt.transaction_type == 'income' %}+{% else %}-{% endif %}£{{ rt.amount|floatformat:2 }}
+        </td>
+        <td>
+          <span class="badge {% if rt.transaction_type == 'income' %}badge-success{% else %}badge-error{% endif %} badge-sm">
+            {{ rt.get_transaction_type_display }}
+          </span>
+        </td>
+        <td>{{ rt.category|default:"—" }}</td>
+        <td>{{ rt.get_frequency_display }}</td>
+        <td>
+          <span class="{% if rt.next_due <= today %}text-error font-semibold{% endif %}">
+            {{ rt.next_due }}
+          </span>
+        </td>
+        <td>
+          {% if rt.is_active %}
+            <span class="badge badge-success badge-sm">Active</span>
+          {% else %}
+            <span class="badge badge-ghost badge-sm">Paused</span>
+          {% endif %}
+        </td>
+        <td class="flex gap-2">
+          <a href="{% url 'recurring-edit' rt.pk %}" class="btn btn-xs btn-ghost">Edit</a>
+          <a href="{% url 'recurring-delete' rt.pk %}" class="btn btn-xs btn-error btn-ghost">Delete</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card bg-base-100 shadow p-8 text-center opacity-60">
+  <p>No recurring transaction rules set up yet.</p>
+  <p class="text-sm mt-2">Add a rule for salary, rent, subscriptions — anything that repeats.</p>
+  <a href="{% url 'recurring-add' %}" class="btn btn-success mt-4">Add your first recurring rule</a>
+</div>
+{% endif %}
+{% endblock %}

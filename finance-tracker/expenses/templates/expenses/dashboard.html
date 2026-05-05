@@ -1,0 +1,198 @@
+{% extends "expenses/base.html" %}
+{% block title %}Dashboard — Finance Tracker{% endblock %}
+
+{% block content %}
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     IMPROVEMENT 1: Overspend alert banner
+     Shown when any BudgetLimit for the current month has status='danger'
+     ───────────────────────────────────────────────────────────────────────── -->
+{% if any_overspend %}
+<div class="alert alert-warning shadow-lg mb-6">
+  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+  </svg>
+  <div>
+    <h3 class="font-bold">Budget Overspend!</h3>
+    <div class="text-sm">One or more categories have exceeded their monthly budget limit this month.</div>
+  </div>
+  <a href="{% url 'budget-list' %}" class="btn btn-sm btn-warning">View Budgets</a>
+</div>
+{% endif %}
+
+<!-- Summary cards row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title text-success text-sm uppercase tracking-wide">Total Income</h2>
+      <p class="text-3xl font-bold text-success">£{{ total_income|floatformat:2 }}</p>
+    </div>
+  </div>
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title text-error text-sm uppercase tracking-wide">Total Expenses</h2>
+      <p class="text-3xl font-bold text-error">£{{ total_expense|floatformat:2 }}</p>
+    </div>
+  </div>
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <h2 class="card-title text-primary text-sm uppercase tracking-wide">Balance</h2>
+      <p class="text-3xl font-bold {% if balance >= 0 %}text-primary{% else %}text-error{% endif %}">
+        £{{ balance|floatformat:2 }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Main grid: budget progress + recent transactions | upcoming recurring -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left: budget progress bars (2/3 width) -->
+  <div class="lg:col-span-2 space-y-4">
+
+    <!-- ──────────────────────────────────────────────────────────────────
+         IMPROVEMENT 1: Budget Progress Bars
+         Each BudgetLimit for the current month is shown as a colour-coded
+         progress bar (green / amber / red) with spent vs limit amounts.
+         ────────────────────────────────────────────────────────────────── -->
+    {% if budget_data %}
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="card-title">
+            Budget Progress
+            <span class="badge badge-ghost text-xs">{{ current_month|date:"M Y" }}</span>
+          </h2>
+          <a href="{% url 'budget-add' %}" class="btn btn-xs btn-outline">+ Add budget</a>
+        </div>
+        {% for b in budget_data %}
+        <div class="mb-3">
+          <div class="flex justify-between text-sm mb-1">
+            <span class="font-medium">{{ b.category }}</span>
+            <span class="opacity-60">£{{ b.spent|floatformat:2 }} / £{{ b.limit|floatformat:2 }}
+              <span class="font-bold
+                {% if b.status == 'danger' %}text-error
+                {% elif b.status == 'warning' %}text-warning
+                {% else %}text-success{% endif %}">
+                ({{ b.pct_raw|floatformat:0 }}%)
+              </span>
+            </span>
+          </div>
+          <progress
+            class="progress w-full
+              {% if b.status == 'danger' %}progress-error
+              {% elif b.status == 'warning' %}progress-warning
+              {% else %}progress-success{% endif %}"
+            value="{{ b.pct_display|floatformat:0 }}"
+            max="100">
+          </progress>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card bg-base-100 shadow">
+      <div class="card-body text-center opacity-60">
+        <p>No budget limits set for this month.</p>
+        <a href="{% url 'budget-add' %}" class="btn btn-sm btn-primary mt-2">Set a budget limit</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent transactions -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="card-title">Recent Transactions</h2>
+          <a href="{% url 'transaction-add' %}" class="btn btn-xs btn-primary">+ Add</a>
+        </div>
+        {% if recent_transactions %}
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm w-full">
+            <thead>
+              <tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="text-right">Amount</th></tr>
+            </thead>
+            <tbody>
+              {% for tx in recent_transactions %}
+              <tr>
+                <td class="opacity-60 text-xs">{{ tx.date }}</td>
+                <td>{{ tx.description|default:"—" }}</td>
+                <td>{{ tx.category|default:"—" }}</td>
+                <td>
+                  <span class="badge {% if tx.transaction_type == 'income' %}badge-success{% else %}badge-error{% endif %} badge-sm">
+                    {{ tx.get_transaction_type_display }}
+                  </span>
+                </td>
+                <td class="text-right font-mono font-semibold
+                  {% if tx.transaction_type == 'income' %}text-success{% else %}text-error{% endif %}">
+                  {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %}£{{ tx.amount|floatformat:2 }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-2 text-right">
+          <a href="{% url 'transaction-list' %}" class="link link-primary text-sm">View all →</a>
+        </div>
+        {% else %}
+        <p class="opacity-60 text-center py-4">No transactions yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div class="space-y-4">
+
+    <!-- ──────────────────────────────────────────────────────────────────
+         IMPROVEMENT 2: Upcoming Recurring Transactions panel
+         Shows active recurring rules due within the next 30 days so the
+         user can anticipate upcoming income/expenses.
+         ────────────────────────────────────────────────────────────────── -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="card-title text-sm">📅 Upcoming (30 days)</h2>
+          <a href="{% url 'recurring-add' %}" class="btn btn-xs btn-outline">+ Add</a>
+        </div>
+        {% if upcoming_recurring %}
+        <ul class="space-y-2">
+          {% for rt in upcoming_recurring %}
+          <li class="flex justify-between items-center text-sm border-b pb-2 last:border-0">
+            <div>
+              <p class="font-medium">{{ rt.description }}</p>
+              <p class="text-xs opacity-60">{{ rt.next_due }} · {{ rt.get_frequency_display }}</p>
+            </div>
+            <span class="font-mono font-semibold
+              {% if rt.transaction_type == 'income' %}text-success{% else %}text-error{% endif %}">
+              {% if rt.transaction_type == 'income' %}+{% else %}-{% endif %}£{{ rt.amount|floatformat:2 }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="{% url 'recurring-list' %}" class="link link-primary text-xs mt-2 block text-right">Manage all →</a>
+        {% else %}
+        <p class="opacity-60 text-xs text-center py-2">No upcoming recurring transactions.</p>
+        <a href="{% url 'recurring-add' %}" class="btn btn-xs btn-success w-full mt-1">Set up recurring</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title text-sm mb-3">Quick Actions</h2>
+        <div class="flex flex-col gap-2">
+          <a href="{% url 'transaction-add' %}" class="btn btn-primary btn-sm">+ Add Transaction</a>
+          <a href="{% url 'budget-add' %}" class="btn btn-warning btn-sm btn-outline">+ Set Budget Limit</a>
+          <a href="{% url 'recurring-add' %}" class="btn btn-success btn-sm btn-outline">+ Add Recurring Rule</a>
+          <a href="{% url 'charts' %}" class="btn btn-ghost btn-sm">📊 View Charts</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

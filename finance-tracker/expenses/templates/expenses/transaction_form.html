@@ -1,0 +1,25 @@
+{% extends "expenses/base.html" %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Transaction{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold mb-6">{% if object %}Edit Transaction{% else %}Add Transaction{% endif %}</h1>
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-control mb-4">
+          <label class="label"><span class="label-text font-medium">{{ field.label }}</span></label>
+          {{ field }}
+          {% if field.errors %}<p class="text-error text-sm mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="btn btn-primary flex-1">Save</button>
+          <a href="{% url 'transaction-list' %}" class="btn btn-ghost flex-1">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

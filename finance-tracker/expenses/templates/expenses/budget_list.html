@@ -1,0 +1,58 @@
+{% extends "expenses/base.html" %}
+{% block title %}Budget Limits{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold">Budget Limits</h1>
+  <a href="{% url 'budget-add' %}" class="btn btn-primary">+ Add Budget Limit</a>
+</div>
+
+{% if budgets %}
+<div class="card bg-base-100 shadow overflow-x-auto">
+  <table class="table table-zebra w-full">
+    <thead>
+      <tr>
+        <th>Month</th><th>Category</th><th>Limit</th>
+        <th>Spent</th><th>% Used</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in budgets %}
+      {% with pct=b.percent_used spent=b.spent_this_month status=b.status %}
+      <tr>
+        <td>{{ b.month|date:"M Y" }}</td>
+        <td>{{ b.category.name }}</td>
+        <td class="font-mono">£{{ b.monthly_limit|floatformat:2 }}</td>
+        <td class="font-mono">£{{ spent|floatformat:2 }}</td>
+        <td>
+          <progress class="progress w-20
+            {% if status == 'danger' %}progress-error
+            {% elif status == 'warning' %}progress-warning
+            {% else %}progress-success{% endif %}"
+            value="{{ pct|floatformat:0 }}" max="100"></progress>
+          <span class="text-xs ml-1">{{ pct|floatformat:1 }}%</span>
+        </td>
+        <td>
+          <span class="badge
+            {% if status == 'danger' %}badge-error
+            {% elif status == 'warning' %}badge-warning
+            {% else %}badge-success{% endif %}">
+            {{ status|capfirst }}
+          </span>
+        </td>
+        <td class="flex gap-2">
+          <a href="{% url 'budget-edit' b.pk %}" class="btn btn-xs btn-ghost">Edit</a>
+          <a href="{% url 'budget-delete' b.pk %}" class="btn btn-xs btn-error btn-ghost">Delete</a>
+        </td>
+      </tr>
+      {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card bg-base-100 shadow p-8 text-center opacity-60">
+  <p>No budget limits set yet.</p>
+  <a href="{% url 'budget-add' %}" class="btn btn-primary mt-4">Set your first budget limit</a>
+</div>
+{% endif %}
+{% endblock %}

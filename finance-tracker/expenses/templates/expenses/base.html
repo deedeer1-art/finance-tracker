@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Finance Tracker{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="navbar bg-base-100 shadow-md px-4 sticky top-0 z-50">
+    <div class="navbar-start">
+      <a href="{% url 'dashboard' %}" class="btn btn-ghost text-xl font-bold text-primary">
+        💰 Finance Tracker
+      </a>
+    </div>
+    <div class="navbar-center hidden lg:flex">
+      <ul class="menu menu-horizontal px-1 gap-1">
+        <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+        <li><a href="{% url 'transaction-list' %}">Transactions</a></li>
+        <li><a href="{% url 'category-list' %}">Categories</a></li>
+        <li><a href="{% url 'charts' %}">Charts</a></li>
+        <!-- IMPROVEMENT 1: Budget Limits link -->
+        <li><a href="{% url 'budget-list' %}" class="text-warning font-semibold">Budgets</a></li>
+        <!-- IMPROVEMENT 2: Recurring Transactions link -->
+        <li><a href="{% url 'recurring-list' %}" class="text-success font-semibold">Recurring</a></li>
+      </ul>
+    </div>
+    <div class="navbar-end">
+      {% if user.is_authenticated %}
+        <span class="text-sm mr-3 hidden md:inline opacity-60">{{ user.email }}</span>
+        <a href="{% url 'account_logout' %}" class="btn btn-ghost btn-sm">Logout</a>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn btn-primary btn-sm">Login</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="container mx-auto px-4 pt-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} mb-2 shadow">
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Main content -->
+  <main class="container mx-auto px-4 py-6 max-w-7xl">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer footer-center p-4 bg-base-100 text-base-content mt-8 opacity-60 text-xs">
+    <p>Finance Tracker · ARWA044/finance-tracker · MIT Licence</p>
+  </footer>
+
+</body>
+</html>
